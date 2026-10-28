@@ -1,6 +1,7 @@
 import "server-only";
 // The only place that talks to an AI company's API. To add another provider,
 // add one function with the same shape as callAnthropic and pick it in getProvider().
+import Anthropic from "@anthropic-ai/sdk";
 import { env } from "../env";
 
 export type AiImage = { mime: string; base64: string };
@@ -16,42 +17,55 @@ export class AiError extends Error {
 
 const TIMEOUT_MS = 120_000;
 
-export const DEFAULT_MODELS = { anthropic: "claude-sonnet-5-5", openai: "" };
+export const DEFAULT_MODELS = { anthropic: "claude-opus-5-5", openai: "" };
 
 export function currentModel() {
   return env.ai.model || DEFAULT_MODELS[env.ai.provider] || "";
 }
 
+// Models that accept server-side refusal fallbacks ("default" routing) on the Claude API.
+const FALLBACK_MODELS = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-opus-5", "claude-fable-5-1"]);
+
+let anthropicClient: Anthropic | null = null;
+function anthropic() {
+  anthropicClient ??= new Anthropic({ apiKey: env.ai.apiKey, baseURL: env.ai.baseUrl || undefined, timeout: TIMEOUT_MS, maxRetries: 2 });
+  return anthropicClient;
+}
+
 async function callAnthropic(req: AiRequest): Promise<AiResponse> {
   const model = currentModel();
-  const res = await fetch((env.ai.baseUrl || "https://api.anthropic.com") + "/v1/messages", {
-    method: "POST",
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": env.ai.apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: req.maxTokens,
-      temperature: req.temperature ?? 0.3,
-      system: req.system,
-      messages: req.messages.map((m) => ({
-        role: m.role,
-        content: m.image
-          ? [
-              { type: "image", source: { type: "base64", media_type: m.image.mime, data: m.image.base64 } },
-              { type: "text", text: m.content || "Please look at this image." },
-            ]
-          : m.content,
-      })),
-    }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw providerError(res.status, data?.error?.message);
-  const text = (data.content ?? []).filter((c: { type: string }) => c.type === "text").map((c: { text: string }) => c.text).join("");
-  return { text, inputTokens: data.usage?.input_tokens ?? 0, outputTokens: data.usage?.output_tokens ?? 0, model, stopReason: data.stop_reason };
+  // Sampling parameters (temperature) are not sent: current Claude models reject them.
+  const params: Anthropic.Beta.MessageCreateParamsNonStreaming = {
+    model,
+    max_tokens: req.maxTokens,
+    system: req.system,
+    messages: req.messages.map((m) => ({
+      role: m.role,
+      content: m.image
+        ? [
+            { type: "image", source: { type: "base64", media_type: m.image.mime as "image/png", data: m.image.base64 } },
+            { type: "text", text: m.content || "Please look at this image." },
+          ]
+        : m.content,
+    })),
+  };
+  // If a safety check declines a request, the API retries it on a suitable fallback model.
+  if (!env.ai.baseUrl && FALLBACK_MODELS.has(model)) {
+    params.betas = ["server-side-fallback-2026-07-01"];
+    params.fallbacks = "default";
+  }
+  let data: Anthropic.Beta.BetaMessage;
+  try {
+    data = await anthropic().beta.messages.create(params);
+  } catch (e) {
+    if (e instanceof Anthropic.APIError) throw providerError(e.status ?? 0, e.message);
+    throw e;
+  }
+  if (data.stop_reason === "refusal") {
+    throw new AiError("The AI declined this request. Try rephrasing it, or use a different source.", "bad_output");
+  }
+  const text = data.content.map((c) => (c.type === "text" ? c.text : "")).join("");
+  return { text, inputTokens: data.usage.input_tokens, outputTokens: data.usage.output_tokens, model: data.model, stopReason: data.stop_reason ?? undefined };
 }
 
 async function callOpenAiCompatible(req: AiRequest): Promise<AiResponse> {

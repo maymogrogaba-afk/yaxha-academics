@@ -62,10 +62,15 @@ export function PdfViewer({ url, downloadUrl, title }: { url: string; downloadUr
     setRendering(false);
   }, [doc, page, zoom]);
 
+  const [shownPage, setShownPage] = useState(page);
+  if (shownPage !== page) {
+    setShownPage(page);
+    setPageInput(String(page));
+  }
+
   useEffect(() => {
     render();
-    setPageInput(String(page));
-  }, [render, page]);
+  }, [render]);
 
   useEffect(() => {
     const onResize = () => render();

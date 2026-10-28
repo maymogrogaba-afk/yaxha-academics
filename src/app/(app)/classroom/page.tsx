@@ -24,6 +24,10 @@ const STATUS: Record<string, { label: string; tone: "neutral" | "ok" | "warn" | 
   failed: { label: "Synchronization failed", tone: "bad" },
 };
 
+function olderThanMinutes(at: string | Date, minutes: number) {
+  return Date.now() - new Date(at).getTime() > minutes * 60_000;
+}
+
 export default async function ClassroomPage({ searchParams }: { searchParams: Promise<{ error?: string; connected?: string }> }) {
   const user = await requireUser();
   const sp = await searchParams;
@@ -36,7 +40,7 @@ export default async function ClassroomPage({ searchParams }: { searchParams: Pr
   const configured = googleConfigured();
   const i = data.integration;
   // A sync that never finished (e.g. the server restarted) should not show as "syncing" forever.
-  const stuck = i?.status === "syncing" && data.runs[0] && !data.runs[0].finished_at && Date.now() - new Date(data.runs[0].started_at).getTime() > 10 * 60_000;
+  const stuck = i?.status === "syncing" && data.runs[0] && !data.runs[0].finished_at && olderThanMinutes(data.runs[0].started_at, 10);
   const status = !i ? "not_connected" : stuck ? "failed" : i.status;
   const connected = i && !["not_connected"].includes(status);
   const drive = hasDriveScope(i?.granted_scopes);

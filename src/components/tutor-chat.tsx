@@ -37,6 +37,7 @@ export function TutorChat({
   const [error, setError] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const tmpCounter = useRef(0);
 
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -47,7 +48,7 @@ export function TutorChat({
     setBusy(true);
     setError(null);
     const imageId = image?.id ?? null;
-    const optimistic: Msg = { id: `tmp-${Date.now()}`, role: "user", content: content.trim() || "Here is the problem.", imageId };
+    const optimistic: Msg = { id: `tmp-${++tmpCounter.current}`, role: "user", content: content.trim() || "Here is the problem.", imageId };
     setMessages((m) => [...m, optimistic]);
     setText("");
     setImage(null);

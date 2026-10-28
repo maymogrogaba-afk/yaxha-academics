@@ -35,9 +35,11 @@ export function QuizTaker({
   const submitted = useRef(false);
 
   // Restore an unsent draft (kept only in this browser until submission).
+  // localStorage only exists in the browser, so the draft is read after hydration.
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from browser storage
       if (saved) setAnswers(JSON.parse(saved));
     } catch {}
   }, [storageKey]);
@@ -70,15 +72,22 @@ export function QuizTaker({
     [answers, attemptId, questions, router, storageKey],
   );
 
+  const submitRef = useRef(submit);
+  useEffect(() => {
+    submitRef.current = submit;
+  }, [submit]);
   useEffect(() => {
     if (!deadline) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const tick = () => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= deadline) submitRef.current(true);
+    };
+    tick();
+    const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [deadline]);
   const remaining = deadline ? Math.max(0, Math.floor((deadline - now) / 1000)) : null;
-  useEffect(() => {
-    if (remaining === 0) submit(true);
-  }, [remaining, submit]);
 
   const q = questions[index];
   const answered = useMemo(() => questions.filter((x) => String(answers[x.id] ?? "").trim()).length, [answers, questions]);

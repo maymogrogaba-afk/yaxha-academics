@@ -89,11 +89,13 @@ try {
   await page.click("text=ENGG 404 Engineering Economics");
   await page.waitForURL(/\/subjects\/[0-9a-f-]+/);
   const subjectUrl = page.url();
+  await page.goto(`${subjectUrl}?tab=materials`);
+  await page.waitForLoadState("networkidle"); // let the page hydrate before choosing a file
   await page.setInputFiles("input[type=file]", path.resolve("tests/fixtures/engg-econ-lesson.pdf"));
   await page.getByText("Uploaded and text extracted.").waitFor({ timeout: 30000 });
   step("PDF upload extracts text", true);
 
-  await page.goto(`${subjectUrl}?tab=materials`);
+  await page.reload();
   await page.click("text=engg-econ-lesson");
   await page.waitForURL(/\/materials\//);
   await page.locator("canvas").first().waitFor({ timeout: 20000 });

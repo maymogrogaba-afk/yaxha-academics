@@ -84,7 +84,10 @@ export function Dialog({
             <X className="size-4" />
           </button>
         </div>
-        <div className="max-h-[75vh] overflow-y-auto px-5 py-4">{typeof children === "function" ? children(close) : children}</div>
+        <div className="max-h-[75vh] overflow-y-auto px-5 py-4">
+          {/* eslint-disable-next-line react-hooks/refs -- `close` only reads the ref when called from an event handler */}
+          {typeof children === "function" ? children(close) : children}
+        </div>
       </dialog>
     </>
   );
@@ -92,14 +95,13 @@ export function Dialog({
 
 /** Shows a short message that fades away; used for "Saved" style feedback. */
 export function Flash({ message, tone = "ok" }: { message?: string | null; tone?: "ok" | "bad" }) {
-  const [visible, setVisible] = useState(Boolean(message));
+  const [dismissed, setDismissed] = useState<string | null>(null);
   useEffect(() => {
-    setVisible(Boolean(message));
     if (!message) return;
-    const t = setTimeout(() => setVisible(false), 5000);
+    const t = setTimeout(() => setDismissed(message), 5000);
     return () => clearTimeout(t);
   }, [message]);
-  if (!message || !visible) return null;
+  if (!message || dismissed === message) return null;
   return (
     <div
       role="status"
