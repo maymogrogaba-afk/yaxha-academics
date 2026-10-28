@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Yaxha design system
+   Obsidian background, graphite panels, champagne gold for what matters.
+   ------------------------------------------------------------------ */
+@theme {
+  --color-obsidian: #08090b;
+  --color-graphite: #141519;
+  --color-raised: #1b1d22;
+  --color-line: #26282e;
+  --color-line-strong: #34373e;
+  --color-gold: #d6b36a;
+  --color-gold-strong: #e3c582;
+  --color-gold-ink: #1a1408;
+  --color-ivory: #f3f4f6;
+  --color-muted: #a1a5ad;
+  --color-faint: #6f747c;
+  --color-ok: #7cc49a;
+  --color-warn: #e3a35a;
+  --color-bad: #e5806f;
+  --color-info: #8fb2de;
+
+  --font-sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-card: 12px;
+}
+
+html {
+  color-scheme: dark;
+  background: var(--color-obsidian);
+}
+
+body {
+  background: var(--color-obsidian);
+  color: var(--color-ivory);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(214 179 106 / 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Thin, quiet scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2d3036 transparent;
+}
+
+/* Rendered study content (summaries, tutor answers, solutions) */
+.prose-yx {
+  line-height: 1.65;
+  font-size: 0.95rem;
+  color: var(--color-ivory);
+  overflow-wrap: anywhere;
+}
+.prose-yx > * + * { margin-top: 0.75em; }
+.prose-yx h1 { font-size: 1.35rem; font-weight: 600; margin-top: 1.4em; }
+.prose-yx h2 { font-size: 1.15rem; font-weight: 600; margin-top: 1.4em; color: var(--color-gold); }
+.prose-yx h3 { font-size: 1rem; font-weight: 600; margin-top: 1.2em; }
+.prose-yx ul { list-style: disc; padding-left: 1.3em; }
+.prose-yx ol { list-style: decimal; padding-left: 1.3em; }
+.prose-yx li + li { margin-top: 0.3em; }
+.prose-yx a { color: var(--color-gold); text-decoration: underline; text-underline-offset: 2px; }
+.prose-yx strong { font-weight: 600; color: #fff; }
+.prose-yx code { font-family: var(--font-mono); font-size: 0.85em; background: var(--color-raised); padding: 0.1em 0.35em; border-radius: 4px; }
+.prose-yx pre { background: var(--color-raised); padding: 0.9em; border-radius: 8px; overflow-x: auto; }
+.prose-yx pre code { background: none; padding: 0; }
+.prose-yx blockquote { border-left: 2px solid var(--color-gold); padding-left: 0.9em; color: var(--color-muted); }
+.prose-yx table { width: 100%; border-collapse: collapse; font-size: 0.9em; display: block; overflow-x: auto; }
+.prose-yx th, .prose-yx td { border: 1px solid var(--color-line); padding: 0.4em 0.6em; text-align: left; }
+.prose-yx th { background: var(--color-raised); font-weight: 600; }
+.prose-yx hr { border-color: var(--color-line); }
+.prose-yx .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.3em 0; }
+.prose-yx .katex { font-size: 1.05em; }
+
+@keyframes yx-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-graphite) 0px, var(--color-raised) 40px, var(--color-graphite) 80px);
+  background-size: 200px 100%;
+  animation: yx-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
