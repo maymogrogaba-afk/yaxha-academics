@@ -4,7 +4,11 @@ import "server-only";
 // Values here are read on the server only and never sent to the browser.
 export const env = {
   databaseUrl: process.env.DATABASE_URL ?? "",
-  appUrl: (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, ""),
+  // On Vercel, APP_URL can be left unset: the production domain is used.
+  appUrl: (
+    process.env.APP_URL ??
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")
+  ).replace(/\/$/, ""),
   tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? "",
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID ?? "",
